@@ -18,12 +18,24 @@ async def run_arbitrage_engine():
         nap_scraper.scrape_tennis(),
         s711_scraper.scrape_tennis()
     )
-    print(f"      Data ingested: {len(nap_events)} (Napoleon) | {len(s711_events)} (711)")
+    print(f"      Data ingested: {len(nap_events)} (Napoleon) | {len(s711_events)} (711)\n")
 
     print("[2/3] Running Fuzzy String Matcher...")
     matcher = EventMatcher()
     pairs = matcher.find_arbitrage_pairs(s711_events, nap_events)
-    print(f"      Identical markets paired: {len(pairs)}")
+    print(f"      Identical markets paired: {len(pairs)}\n")
+
+    # --- NIEUW: OBSERVABILITY LAYER ---
+    print("--- MARKET DIVERSITY ANALYSIS (What are we scanning?) ---")
+    market_types = {}
+    for p in pairs:
+        m_type = p['market_711']
+        market_types[m_type] = market_types.get(m_type, 0) + 1
+
+    # Sorteer markten op aantal gevonden koppelingen
+    for m_type, count in sorted(market_types.items(), key=lambda x: x[1], reverse=True):
+        print(f"  - {m_type}: {count} matched pair(s)")
+    print("---------------------------------------------------------\n")
 
     print("[3/3] Calculating Dutching constraints & EV (50% 711-Boost)...\n")
     calculator = ArbitrageEngine(fixed_stake_711=50.0, boost_multiplier=1.50)
@@ -48,36 +60,25 @@ async def run_arbitrage_engine():
         print("No profitable arbitrage opportunities found at this moment.")
         return
 
-    # Print uitsluitend de beste mogelijkheid
-    p, direction, calc = profitable_opportunities[0]
+    # Print de Top 5 in plaats van alleen de eerste
+    print("🏆 TOP 5 MOST PROFITABLE OPPORTUNITIES:")
+    print("=======================================\n")
 
-    if direction == "A":
-        bet_711_label = p['bet_711_A_label']
-        hedge_nap_label = p['hedge_nap_A_label']
-    else:
-        bet_711_label = p['bet_711_B_label']
-        hedge_nap_label = p['hedge_nap_B_label']
+    for i, (p, direction, calc) in enumerate(profitable_opportunities[:5]):
+        if direction == "A":
+            bet_711_label = p['bet_711_A_label']
+            hedge_nap_label = p['hedge_nap_A_label']
+        else:
+            bet_711_label = p['bet_711_B_label']
+            hedge_nap_label = p['hedge_nap_B_label']
 
-    print(f"OPTIMAL ARBITRAGE SELECTION:")
-    print(f"Match:  {p['match_name']}")
-    print(f"Market: {p['market_711']} (711) vs {p['market_nap']} (Napoleon)")
-    print("")
-    print(f"EXECUTION STEP 1 (711 Sports):")
-    print(f"  Selection: {bet_711_label}")
-    print(f"  Base Odds: {calc.odds_711_base} -> Boosted: {calc.odds_711_boosted}")
-    print(f"  Stake:     EUR {calc.stake_711:.2f} (Fixed)")
-    print("")
-    print(f"EXECUTION STEP 2 (Napoleon Games):")
-    print(f"  Selection: {hedge_nap_label}")
-    print(f"  Odds:      {calc.odds_napoleon}")
-    print(f"  Stake:     EUR {calc.stake_napoleon:.2f} (Calculated Hedge)")
-    print("")
-    print(f"FINANCIAL PROJECTION:")
-    print(f"  Total Investment:   EUR {calc.total_investment:.2f}")
-    print(f"  Guaranteed Return:  EUR {calc.guaranteed_payout:.2f}")
-    print(f"  Net Profit:         EUR {calc.net_profit:.2f}")
-    print(f"  Return on Invest:   {calc.roi_percentage}%")
-    print("--------------------------------------------------")
+        print(f"#{i + 1} | Match:  {p['match_name']}")
+        print(f"     Market: {p['market_711']} (711) vs {p['market_nap']} (Napoleon)")
+        print(
+            f"     711:    Bet on '{bet_711_label}' @ Boosted {calc.odds_711_boosted} (Stake: EUR {calc.stake_711:.2f})")
+        print(f"     Nap:    Bet on '{hedge_nap_label}' @ {calc.odds_napoleon} (Stake: EUR {calc.stake_napoleon:.2f})")
+        print(f"     PROFIT: EUR {calc.net_profit:.2f} (ROI: {calc.roi_percentage}%)")
+        print("-" * 50)
 
 
 if __name__ == "__main__":
