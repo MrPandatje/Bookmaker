@@ -1,0 +1,4 @@
+aiohttp==3.9.3
+thefuzz==0.22.1
+python-Levenshtein==0.25.0
+pydantic==2.6.3
