@@ -25,18 +25,6 @@ async def run_arbitrage_engine():
     pairs = matcher.find_arbitrage_pairs(s711_events, nap_events)
     print(f"      Identical markets paired: {len(pairs)}\n")
 
-    # --- NIEUW: OBSERVABILITY LAYER ---
-    print("--- MARKET DIVERSITY ANALYSIS (What are we scanning?) ---")
-    market_types = {}
-    for p in pairs:
-        m_type = p['market_711']
-        market_types[m_type] = market_types.get(m_type, 0) + 1
-
-    # Sorteer markten op aantal gevonden koppelingen
-    for m_type, count in sorted(market_types.items(), key=lambda x: x[1], reverse=True):
-        print(f"  - {m_type}: {count} matched pair(s)")
-    print("---------------------------------------------------------\n")
-
     print("[3/3] Calculating Dutching constraints & EV (50% 711-Boost)...\n")
     calculator = ArbitrageEngine(fixed_stake_711=50.0, boost_multiplier=1.50)
 
@@ -50,6 +38,7 @@ async def run_arbitrage_engine():
         if res_B and res_B.net_profit > 0:
             profitable_opportunities.append((p, "B", res_B))
 
+    # Sorteer op absolute netto winst (hoogste bovenaan)
     profitable_opportunities.sort(key=lambda x: x[2].net_profit, reverse=True)
 
     print("--------------------------------------------------")
@@ -60,11 +49,11 @@ async def run_arbitrage_engine():
         print("No profitable arbitrage opportunities found at this moment.")
         return
 
-    # Print de Top 5 in plaats van alleen de eerste
-    print("🏆 TOP 5 MOST PROFITABLE OPPORTUNITIES:")
-    print("=======================================\n")
+    print("TOP 5 MOST PROFITABLE OPPORTUNITIES:")
+    print("==================================================\n")
 
-    for i, (p, direction, calc) in enumerate(profitable_opportunities[:5]):
+    for i, item in enumerate(profitable_opportunities[:5]):
+        p, direction, calc = item
         if direction == "A":
             bet_711_label = p['bet_711_A_label']
             hedge_nap_label = p['hedge_nap_A_label']
