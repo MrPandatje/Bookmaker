@@ -9,4 +9,4 @@ A modular, high-performance Python engine designed to identify and mathematicall
 - **Mathematical Optimization**: A deterministic calculator that applies specific constraint logic (e.g., fixed €50 stake limit, non-linear boosted odds) to calculate the exact hedge required to guarantee uniform positive expected value (EV), regardless of the discrete outcome.
 
 ## Tech Stack
-Python 3.11+ | `aiohttp` | `pydantic` | `thefuzz`
+Python | `aiohttp` | `pydantic` | `thefuzz`
